@@ -44,15 +44,15 @@ def load_rows():
     if not CSV_PATH.exists():
         fail(f"Missing {CSV_PATH}")
 
-    required = {"type", "imdb_id", "season", "episode", "episode_count", "url"}
+    required = {"type", "imdb_id", "season", "episode", "url"}
     rows = []
     seen = set()
-    series_groups = defaultdict(list)
 
     with CSV_PATH.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         if not reader.fieldnames:
             fail("CSV has no header row.")
+
         missing = required - set(reader.fieldnames)
         if missing:
             fail("CSV is missing columns: " + ", ".join(sorted(missing)))
@@ -65,7 +65,6 @@ def load_rows():
             imdb_id = (row["imdb_id"] or "").strip()
             season = (row["season"] or "").strip()
             episode = (row["episode"] or "").strip()
-            episode_count = (row["episode_count"] or "").strip()
             url = (row["url"] or "").strip()
 
             if media_type not in {"movie", "series"}:
@@ -75,64 +74,46 @@ def load_rows():
             require_https(url, row_num)
 
             if media_type == "movie":
-                if any([season, episode, episode_count]):
-                    fail(f"Row {row_num}: season/episode/episode_count must be blank for movies.")
+                if any([season, episode]):
+                    fail(
+                        f"Row {row_num}: season/episode must be blank for movies."
+                    )
+
                 key = ("movie", imdb_id)
                 if key in seen:
                     fail(f"Duplicate movie entry: {imdb_id}")
                 seen.add(key)
+
                 rows.append({
                     "type": media_type,
                     "imdb_id": imdb_id,
                     "url": url,
                 })
+
             else:
-                if not all([season, episode, episode_count]):
-                    fail(f"Row {row_num}: series rows require season, episode, and episode_count.")
+                if not all([season, episode]):
+                    fail(
+                        f"Row {row_num}: series rows require season and episode."
+                    )
+
                 s = parse_positive_int(season, "season", row_num)
                 e = parse_positive_int(episode, "episode", row_num)
-                ec = parse_positive_int(episode_count, "episode_count", row_num)
-
-                if e > ec:
-                    fail(f"Row {row_num}: episode {e} exceeds episode_count {ec}.")
 
                 key = ("series", imdb_id, s, e)
                 if key in seen:
-                    fail(f"Duplicate series episode: {imdb_id} S{s:02d}E{e:02d}")
+                    fail(
+                        f"Duplicate series episode: "
+                        f"{imdb_id} S{s:02d}E{e:02d}"
+                    )
                 seen.add(key)
 
-                series_groups[(imdb_id, s)].append((e, ec))
                 rows.append({
                     "type": media_type,
                     "imdb_id": imdb_id,
                     "season": s,
                     "episode": e,
-                    "episode_count": ec,
                     "url": url,
                 })
-
-    # Validate each season has exactly episodes 1..episode_count.
-    for (imdb_id, season), items in series_groups.items():
-        counts = {count for _, count in items}
-        if len(counts) != 1:
-            fail(
-                f"{imdb_id} season {season}: all rows must use the same episode_count."
-            )
-        expected = next(iter(counts))
-        actual = sorted(e for e, _ in items)
-        wanted = list(range(1, expected + 1))
-        if actual != wanted:
-            missing = sorted(set(wanted) - set(actual))
-            extra = sorted(set(actual) - set(wanted))
-            details = []
-            if missing:
-                details.append("missing " + ", ".join(map(str, missing)))
-            if extra:
-                details.append("unexpected " + ", ".join(map(str, extra)))
-            fail(
-                f"{imdb_id} season {season}: expected episodes 1-{expected}; "
-                + "; ".join(details)
-            )
 
     return rows
 
@@ -164,25 +145,18 @@ def main() -> None:
     for row in rows:
         if row["type"] == "movie":
             target = DIST / "stream" / "movie" / f'{row["imdb_id"]}.json'
-            data = {
-                "streams": [
-                    {
-                        "name": "Direct",
-                        "url": row["url"],
-                    }
-                ]
-            }
         else:
             stream_id = f'{row["imdb_id"]}:{row["season"]}:{row["episode"]}'
             target = DIST / "stream" / "series" / f"{stream_id}.json"
-            data = {
-                "streams": [
-                    {
-                        "name": "Direct",
-                        "url": row["url"],
-                    }
-                ]
-            }
+
+        data = {
+            "streams": [
+                {
+                    "name": "Direct",
+                    "url": row["url"],
+                }
+            ]
+        }
 
         write_json(target, data)
 
@@ -191,7 +165,11 @@ def main() -> None:
 
     movie_count = sum(1 for r in rows if r["type"] == "movie")
     episode_count = sum(1 for r in rows if r["type"] == "series")
-    print(f"Generated {movie_count} movie stream(s) and {episode_count} episode stream(s).")
+
+    print(
+        f"Generated {movie_count} movie stream(s) "
+        f"and {episode_count} episode stream(s)."
+    )
 
 
 if __name__ == "__main__":
