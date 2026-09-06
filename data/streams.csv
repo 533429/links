@@ -1,0 +1,8 @@
+type,imdb_id,season,episode,episode_count,url
+movie,tt1234567,,,,https://example.com/movie.mp4
+movie,tt2345678,,,,https://example.com/movie2.mp4
+series,tt3456789,1,1,3,https://example.com/show/s01e01.mp4
+series,tt3456789,1,2,3,https://example.com/show/s01e02.mp4
+series,tt3456789,1,3,3,https://example.com/show/s01e03.mp4
+series,tt3456789,2,1,2,https://example.com/show/s02e01.mp4
+series,tt3456789,2,2,2,https://example.com/show/s02e02.mp4

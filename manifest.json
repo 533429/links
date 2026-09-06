@@ -1,0 +1,10 @@
+{
+  "id": "com.dropnet.stream",
+  "version": "1.0.0",
+  "name": "Dropnet",
+  "description": "Stream nemt, stream godt.",
+  "resources": ["stream"],
+  "types": ["movie", "series"],
+  "idPrefixes": ["tt"],
+  "catalogs": []
+}
