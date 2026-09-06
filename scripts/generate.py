@@ -150,10 +150,10 @@ def main() -> None:
     clean_dist()
 
     manifest = {
-        "id": "com.example.directstreams",
+        "id": "com.dropnet.stream",
         "version": "1.0.0",
-        "name": "Direct Streams",
-        "description": "Streams backed by direct HTTPS video URLs.",
+        "name": "Dropnet",
+        "description": "Stream nemt, stream godt.",
         "resources": ["stream"],
         "types": ["movie", "series"],
         "idPrefixes": ["tt"],
