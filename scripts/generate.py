@@ -152,7 +152,7 @@ def main() -> None:
         data = {
             "streams": [
                 {
-                    "name": "Direct",
+                    "name": "Dropnet",
                     "url": row["url"],
                 }
             ]
